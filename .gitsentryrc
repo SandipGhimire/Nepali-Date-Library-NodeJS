@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "pre-commit": {
+      "commands": [
+        "npm run test",
+        "npm run build"
+      ],
+      "options": {
+        "verbose": true
+      }
+    }
+  }
+}
