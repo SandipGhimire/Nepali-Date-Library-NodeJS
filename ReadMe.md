@@ -12,7 +12,8 @@ The `NepaliDate` library provides a proper way to work with Nepali (Bikram Samba
 
 For detailed guides, API references, and examples, please visit our **official Wiki**:
 
-👉 **[nepalidate.sandip-ghimire.com.np](https://github.com/SandipGhimire/nepali-date-library)**
+👉 **[nepalidate.sandip-ghimire.com.np](https://nepalidate.sandip-ghimire.com.np)**
+
 
 ## Installation
 
@@ -29,7 +30,7 @@ const now = new NepaliDate();
 console.log(now.format("YYYY-MM-DD"));
 ```
 
-For more advanced usage, please refer to the [Wiki](https://nepalidate.sandip-ghimire.com).
+For more advanced usage, please refer to the [Wiki](https://nepalidate.sandip-ghimire.com.np).
 
 ## License
 
