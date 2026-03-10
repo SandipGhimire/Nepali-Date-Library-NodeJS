@@ -12,7 +12,8 @@ The `NepaliDate` library provides a proper way to work with Nepali (Bikram Samba
 
 For detailed guides, API references, and examples, please visit our **official Wiki**:
 
-👉 **[nepalidate.sandip-ghimire.com.np](https://github.com/SandipGhimire/nepali-date-library)**
+👉 **[nepalidate.sandip-ghimire.com.np](https://nepalidate.sandip-ghimire.com.np)**
+
 
 ## Installation
 
