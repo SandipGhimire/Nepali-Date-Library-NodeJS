@@ -131,6 +131,58 @@ export class NepaliDate {
   }
 
   /**
+   * Sets the Nepali date components and updates the internal timestamp
+   * @param year Nepali year
+   * @param month Nepali month (0-11)
+   * @param date Nepali day (1-32)
+   */
+  public set(year: number, month: number, date: number): void {
+    const idx = year + Math.floor(month / 12) - NEPALI_DATE_MAP[0].year;
+    if (idx < 0 || idx >= NEPALI_DATE_MAP.length) {
+      throw new Error("Nepal year out of range!");
+    }
+    const tmp = NEPALI_DATE_MAP[idx];
+    let d = tmp.daysTillNow - tmp.totalDays;
+
+    const m = month % 12;
+    const mm = m < 0 ? 12 + m : m;
+
+    for (let i = 0; i < mm; i += 1) {
+      d += tmp.days[i];
+    }
+    d += date - 1;
+    const utcTimestamp = EPOCH + d * 86400000;
+    const utcDate = new Date(utcTimestamp);
+
+    this.setEnglishDate(utcDate);
+  }
+
+  /**
+   * Formats the Nepali date according to the specified format string
+   * @param formatStr Format string (see DateFormatter for syntax)
+   * @returns Formatted date string
+   */
+  public format(formatStr: string): string {
+    return format(this, formatStr);
+  }
+
+  /**
+   * Creates a copy of the current NepaliDate instance
+   * @returns A new NepaliDate instance with the same date and time
+   */
+  public clone(): NepaliDate {
+    return new NepaliDate(this);
+  }
+
+  /**
+   * Returns the string representation of the Nepali date
+   * @returns Date string in format YYYY/MM/DD where MM is 1-indexed
+   */
+  public toString(): string {
+    return `${String(this.year)}/${String(this.month + 1)}/${String(this.day)}`;
+  }
+
+  /**
    * Returns the equivalent English (Gregorian) date
    * @returns JavaScript Date object representing the equivalent Gregorian date
    */
@@ -164,19 +216,19 @@ export class NepaliDate {
   }
 
   /**
-   * Returns the Nepali day of month
-   * @returns Nepali day of month (1-32)
-   */
-  public getDate(): number {
-    return this.day;
-  }
-
-  /**
    * Returns the day of week (0-6, 0 = Sunday)
    * @returns Day of week (0-6, 0 = Sunday)
    */
   public getDay(): number {
     return this.timestamp.getDay();
+  }
+
+  /**
+   * Returns the Nepali day of month
+   * @returns Nepali day of month (1-32)
+   */
+  public getDate(): number {
+    return this.day;
   }
 
   /**
@@ -244,50 +296,6 @@ export class NepaliDate {
   }
 
   /**
-   * Sets the Nepali date components and updates the internal timestamp
-   * @param year Nepali year
-   * @param month Nepali month (0-11)
-   * @param date Nepali day (1-32)
-   */
-  public set(year: number, month: number, date: number): void {
-    const idx = year + Math.floor(month / 12) - NEPALI_DATE_MAP[0].year;
-    if (idx < 0 || idx >= NEPALI_DATE_MAP.length) {
-      throw new Error("Nepal year out of range!");
-    }
-    const tmp = NEPALI_DATE_MAP[idx];
-    let d = tmp.daysTillNow - tmp.totalDays;
-
-    const m = month % 12;
-    const mm = m < 0 ? 12 + m : m;
-
-    for (let i = 0; i < mm; i += 1) {
-      d += tmp.days[i];
-    }
-    d += date - 1;
-    const utcTimestamp = EPOCH + d * 86400000;
-    const utcDate = new Date(utcTimestamp);
-
-    this.setEnglishDate(utcDate);
-  }
-
-  /**
-   * Formats the Nepali date according to the specified format string
-   * @param formatStr Format string (see DateFormatter for syntax)
-   * @returns Formatted date string
-   */
-  public format(formatStr: string): string {
-    return format(this, formatStr);
-  }
-
-  /**
-   * Returns the string representation of the Nepali date
-   * @returns Date string in format YYYY/MM/DD where MM is 1-indexed
-   */
-  public toString(): string {
-    return `${String(this.year)}/${String(this.month + 1)}/${String(this.day)}`;
-  }
-
-  /**
    * Adds the specified number of days to the current Nepali date
    * @param days Number of days to add (can be negative)
    * @returns A new NepaliDate instance with the added days
@@ -340,14 +348,10 @@ export class NepaliDate {
 
     const yearIndex = newYear - NEPALI_DATE_MAP[0].year;
 
-    if (this.month === 11 && this.day === 29) {
-      const daysInFalgun = NEPALI_DATE_MAP[yearIndex].days[11];
-      if (daysInFalgun < 29) {
-        return new NepaliDate(newYear, 11, daysInFalgun);
-      }
-    }
+    const daysInMonth = NEPALI_DATE_MAP[yearIndex].days[this.month];
+    const newDay = Math.min(this.day, daysInMonth);
 
-    return new NepaliDate(newYear, this.month, this.day);
+    return new NepaliDate(newYear, this.month, newDay);
   }
 
   /**
@@ -381,7 +385,7 @@ export class NepaliDate {
    */
   public isLeapYear(): boolean {
     const yearIndex = this.year - NEPALI_DATE_MAP[0].year;
-    return NEPALI_DATE_MAP[yearIndex].totalDays === 366;
+    return NEPALI_DATE_MAP[yearIndex].totalDays >= 366;
   }
 
   /**
@@ -473,6 +477,9 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the last day of the week
    */
   endOfWeek(startOfWeek = 0): NepaliDate {
+    if (startOfWeek < 0 || startOfWeek > 6 || !Number.isInteger(startOfWeek)) {
+      throw new Error("startOfWeek must be an integer between 0 and 6");
+    }
     // Get the start of the week
     const weekStart = this.startOfWeek(startOfWeek);
 
@@ -699,14 +706,6 @@ export class NepaliDate {
       nextMonth: nextMonthMap,
       remainingDays: remainingDays,
     };
-  }
-
-  /**
-   * Creates a copy of the current NepaliDate instance
-   * @returns A new NepaliDate instance with the same date and time
-   */
-  public clone(): NepaliDate {
-    return new NepaliDate(this);
   }
 
   /**
