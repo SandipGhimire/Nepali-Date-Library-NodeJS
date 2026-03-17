@@ -9,6 +9,11 @@ describe("Master Test Case: Full Range Verification (1976 - 2100)", () => {
           const bsToAdDate = BStoAD(nepaliDate.format("YYYY-MM-DD"));
           const nepaliDate2 = new NepaliDate(new Date(bsToAdDate));
           const adToBsDate = ADtoBS(bsToAdDate);
+
+          if(nepaliDate.format("YYYY-MM-DD") !== nepaliDate2.format("YYYY-MM-DD")) {
+            console.log("----Failed Date----\nInital Date:", nepaliDate.format("YYYY-MM-DD"), "\nConverted Date:", bsToAdDate, "\nReconverted Date:", nepaliDate2.format("YYYY-MM-DD"))
+          }
+
           expect(nepaliDate.format("YYYY-MM-DD")).toBe(nepaliDate2.format("YYYY-MM-DD"));
           expect(nepaliDate.format("YYYY-MM-DD")).toBe(adToBsDate);
         }
