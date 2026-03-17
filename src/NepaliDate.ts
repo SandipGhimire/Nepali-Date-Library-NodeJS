@@ -374,9 +374,12 @@ export class NepaliDate {
    * Returns the number of days in the current month
    * @returns Number of days in the month
    */
-  public daysInMonth(): number {
-    const yearIndex = this.year - NEPALI_DATE_MAP[0].year;
-    return NEPALI_DATE_MAP[yearIndex].days[this.month];
+  public daysInMonth(year?: number, month?: number): number {
+    if (month && (month < 0 || month > 11)) {
+      throw new Error("Invalid month index, must be between 0-11");
+    }
+    const yearIndex = (year ?? this.year) - NEPALI_DATE_MAP[0].year;
+    return NEPALI_DATE_MAP[yearIndex].days[month ?? this.month];
   }
 
   /**
