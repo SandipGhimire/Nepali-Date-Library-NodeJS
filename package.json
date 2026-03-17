@@ -14,7 +14,7 @@
   "homepage": "https://nepalidate.sandip-ghimire.com.np",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SandipGhimire/nepali-date-library.git"
+    "url": "https://github.com/SandipGhimire/nepali-date-library-nodejs.git"
   },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
