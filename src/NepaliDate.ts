@@ -375,7 +375,7 @@ export class NepaliDate {
    * @returns Number of days in the month
    */
   public daysInMonth(year?: number, month?: number): number {
-    if (month && (month < 0 || month > 11)) {
+    if (month !== undefined && (month < 0 || month > 11)) {
       throw new Error("Invalid month index, must be between 0-11");
     }
     const yearIndex = (year ?? this.year) - NEPALI_DATE_MAP[0].year;
