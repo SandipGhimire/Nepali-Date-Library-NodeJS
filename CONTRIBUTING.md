@@ -60,6 +60,19 @@ pnpm run test
 # Runs tests for both node and browser
 ```
 
+`package.json` declares `"engines": { "node": ">=8" }`, but Vitest itself
+needs a modern Node runtime. Compatibility with older Node versions is
+verified separately, against the built `dist/index.cjs` bundle, using a
+framework-free script that only needs Node's built-in `assert` module:
+
+```bash
+pnpm run build
+pnpm run test:compat
+```
+
+CI runs `pnpm run test` on Node 18-26 and `test:compat` on Node 8-17, so the
+full advertised range (8-26) is covered on every push.
+
 ### Linting & Formatting
 
 ```bash

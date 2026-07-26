@@ -30,6 +30,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:compat": "node test/compat/smoke.cjs",
     "build:esbuild": "pnpm run build:esbuild:cjs && pnpm run build:esbuild:mjs",
     "build:esbuild:cjs": "esbuild src/index.ts --bundle --platform=node --target=node8 --format=cjs --outfile=dist/index.cjs",
     "build:esbuild:mjs": "esbuild src/index.ts --bundle --platform=neutral --target=es2019 --format=esm --outfile=dist/index.mjs",
