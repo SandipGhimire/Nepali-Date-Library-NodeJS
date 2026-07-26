@@ -220,7 +220,7 @@ export class NepaliDate {
    * @returns Day of week (0-6, 0 = Sunday)
    */
   public getDay(): number {
-    return this.timestamp.getDay();
+    return this.timestamp.getUTCDay();
   }
 
   /**
@@ -236,7 +236,7 @@ export class NepaliDate {
    * @returns Hour (0-23)
    */
   public getHours(): number {
-    return this.timestamp.getHours();
+    return this.timestamp.getUTCHours();
   }
 
   /**
@@ -244,7 +244,7 @@ export class NepaliDate {
    * @returns Minutes (0-59)
    */
   public getMinutes(): number {
-    return this.timestamp.getMinutes();
+    return this.timestamp.getUTCMinutes();
   }
 
   /**
@@ -252,7 +252,7 @@ export class NepaliDate {
    * @returns Seconds (0-59)
    */
   public getSeconds(): number {
-    return this.timestamp.getSeconds();
+    return this.timestamp.getUTCSeconds();
   }
 
   /**
@@ -260,7 +260,7 @@ export class NepaliDate {
    * @returns Milliseconds (0-999)
    */
   public getMilliseconds(): number {
-    return this.timestamp.getMilliseconds();
+    return this.timestamp.getUTCMilliseconds();
   }
 
   /**
@@ -319,7 +319,6 @@ export class NepaliDate {
 
     if (newMonth < 0) {
       newMonth += 12;
-      newYear -= 1;
     }
 
     const yearIndex = newYear - NEPALI_DATE_MAP[0].year;
@@ -367,7 +366,11 @@ export class NepaliDate {
    * @returns JavaScript Date object representing the maximum supported date
    */
   public static maximum(): Date {
-    return new Date(EPOCH + NEPALI_DATE_MAP[NEPALI_DATE_MAP.length - 1].daysTillNow * 86400000);
+    // daysTillNow is a count (1-indexed), so the last valid day sits at
+    // offset (daysTillNow - 1); using daysTillNow directly landed one day
+    // past the actual last supported date and couldn't round-trip back
+    // into a NepaliDate.
+    return new Date(EPOCH + (NEPALI_DATE_MAP[NEPALI_DATE_MAP.length - 1].daysTillNow - 1) * 86400000);
   }
 
   /**
@@ -433,7 +436,7 @@ export class NepaliDate {
    */
   public startOfDay(): NepaliDate {
     const date = new Date(this.timestamp);
-    date.setHours(0, 0, 0, 0);
+    date.setUTCHours(0, 0, 0, 0);
     return new NepaliDate(date);
   }
 
@@ -443,7 +446,7 @@ export class NepaliDate {
    */
   public endOfDay(): NepaliDate {
     const date = new Date(this.timestamp);
-    date.setHours(23, 59, 59, 999);
+    date.setUTCHours(23, 59, 59, 999);
     return new NepaliDate(date);
   }
 
@@ -538,14 +541,11 @@ export class NepaliDate {
     if (month < 0 || month > 11) {
       throw new Error("Invalid month index, must be between 0-11");
     }
-    let result = "";
     if (nepali) {
-      result = short ? MONTH_SHORT_NP[month] : MONTH_NP[month];
+      return short ? MONTH_SHORT_NP[month] : MONTH_NP[month];
     } else {
-      result = short ? MONTH_SHORT_EN[month] : MONTH_EN[month];
+      return short ? MONTH_SHORT_EN[month] : MONTH_EN[month];
     }
-
-    return result;
   }
 
   /**
@@ -559,14 +559,11 @@ export class NepaliDate {
       throw new Error("Invalid day index, must be between 0-6");
     }
 
-    let result = "";
     if (nepali) {
-      result = short ? WEEK_SHORT_NP[day] : WEEK_NP[day];
+      return short ? WEEK_SHORT_NP[day] : WEEK_NP[day];
     } else {
-      result = short ? WEEK_SHORT_EN[day] : WEEK_EN[day];
+      return short ? WEEK_SHORT_EN[day] : WEEK_EN[day];
     }
-
-    return result;
   }
 
   /**

@@ -1,5 +1,18 @@
 import { NepaliDate } from "../NepaliDate";
 
+// Custom Error class for Date Conversion
+class DateConversionError extends Error {
+  public readonly cause: unknown;
+
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = "DateConversionError";
+    this.cause = cause;
+
+    Object.setPrototypeOf(this, DateConversionError.prototype);
+  }
+}
+
 /**
  * Converts a Anno Domini (AD) date to an Bikram Sambat(BS) Date.
  * @param adDate The Anno Domini (AD) date in "YYYY-MM-DD" format.
@@ -22,8 +35,7 @@ export const ADtoBS = (adDate: string): string => {
     const nepaliDate = new NepaliDate(ad);
     return nepaliDate.format("YYYY-MM-DD");
   } catch (err) {
-    console.error("Error During Date Conversion : ", err);
-    throw new Error("Failed to convert AD to BS");
+    throw new DateConversionError("Failed to convert AD to BS", err);
   }
 };
 
@@ -43,7 +55,6 @@ export function BStoAD(bsDate: string): string {
 
     return `${String(date.getUTCFullYear())}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
   } catch (err) {
-    console.error("Error During Date Conversion : ", err);
-    throw new Error("Failed to convert BS to AD");
+    throw new DateConversionError("Failed to convert BS to AD", err);
   }
 }

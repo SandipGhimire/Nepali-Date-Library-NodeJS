@@ -2,17 +2,15 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2015",
-    "moduleResolution": "Node",
+
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+
     "declaration": true,
-    "declarationDir": "dist",
-    "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "declarationDir": "./dist",
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
   "include": [
     "src/**/*.ts"
