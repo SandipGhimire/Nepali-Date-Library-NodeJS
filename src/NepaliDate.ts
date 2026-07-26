@@ -236,7 +236,7 @@ export class NepaliDate {
    * @returns Hour (0-23)
    */
   public getHours(): number {
-    return this.timestamp.getUTCHours();
+    return this.timestamp.getHours();
   }
 
   /**
@@ -244,7 +244,7 @@ export class NepaliDate {
    * @returns Minutes (0-59)
    */
   public getMinutes(): number {
-    return this.timestamp.getUTCMinutes();
+    return this.timestamp.getMinutes();
   }
 
   /**
@@ -252,7 +252,7 @@ export class NepaliDate {
    * @returns Seconds (0-59)
    */
   public getSeconds(): number {
-    return this.timestamp.getUTCSeconds();
+    return this.timestamp.getSeconds();
   }
 
   /**
@@ -260,7 +260,7 @@ export class NepaliDate {
    * @returns Milliseconds (0-999)
    */
   public getMilliseconds(): number {
-    return this.timestamp.getUTCMilliseconds();
+    return this.timestamp.getMilliseconds();
   }
 
   /**
@@ -436,7 +436,7 @@ export class NepaliDate {
    */
   public startOfDay(): NepaliDate {
     const date = new Date(this.timestamp);
-    date.setUTCHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
     return new NepaliDate(date);
   }
 
@@ -446,7 +446,7 @@ export class NepaliDate {
    */
   public endOfDay(): NepaliDate {
     const date = new Date(this.timestamp);
-    date.setUTCHours(23, 59, 59, 999);
+    date.setHours(23, 59, 59, 999);
     return new NepaliDate(date);
   }
 
