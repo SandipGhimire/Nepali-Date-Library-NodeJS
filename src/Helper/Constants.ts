@@ -770,6 +770,8 @@ NEPALI_DATE_MAP.forEach((entry) => {
 
 export const EPOCH: number = Date.UTC(1919, 3, 13);
 
+export const NEPAL_UTC_OFFSET_MS: number = 5 * 60 * 60 * 1000 + 45 * 60 * 1000;
+
 //WEEK
 /**
  * Array of English week days.

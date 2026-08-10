@@ -4,6 +4,7 @@ import {
   MONTH_NP,
   MONTH_SHORT_EN,
   MONTH_SHORT_NP,
+  NEPAL_UTC_OFFSET_MS,
   NEPALI_DATE_MAP,
   WEEK_EN,
   WEEK_NP,
@@ -105,7 +106,12 @@ export class NepaliDate {
   private setEnglishDate(date: Date): void {
     this.timestamp = date;
 
-    const utcTime = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const nepalWallClock = new Date(date.getTime() + NEPAL_UTC_OFFSET_MS);
+    const utcTime = Date.UTC(
+      nepalWallClock.getUTCFullYear(),
+      nepalWallClock.getUTCMonth(),
+      nepalWallClock.getUTCDate()
+    );
 
     let daysCount = Math.floor((utcTime - EPOCH) / 86400000);
     let idx = Math.floor(daysCount / 366);
@@ -236,7 +242,7 @@ export class NepaliDate {
    * @returns Hour (0-23)
    */
   public getHours(): number {
-    return this.timestamp.getHours();
+    return this.timestamp.getUTCHours();
   }
 
   /**
@@ -244,7 +250,7 @@ export class NepaliDate {
    * @returns Minutes (0-59)
    */
   public getMinutes(): number {
-    return this.timestamp.getMinutes();
+    return this.timestamp.getUTCMinutes();
   }
 
   /**
@@ -252,7 +258,7 @@ export class NepaliDate {
    * @returns Seconds (0-59)
    */
   public getSeconds(): number {
-    return this.timestamp.getSeconds();
+    return this.timestamp.getUTCSeconds();
   }
 
   /**
@@ -435,9 +441,11 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the start of the day
    */
   public startOfDay(): NepaliDate {
-    const date = new Date(this.timestamp);
-    date.setHours(0, 0, 0, 0);
-    return new NepaliDate(date);
+    const result = this.clone();
+    const date = new Date(result.timestamp);
+    date.setUTCHours(0, 0, 0, 0);
+    result.timestamp = date;
+    return result;
   }
 
   /**
@@ -445,9 +453,11 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the end of the day
    */
   public endOfDay(): NepaliDate {
-    const date = new Date(this.timestamp);
-    date.setHours(23, 59, 59, 999);
-    return new NepaliDate(date);
+    const result = this.clone();
+    const date = new Date(result.timestamp);
+    date.setUTCHours(23, 59, 59, 999);
+    result.timestamp = date;
+    return result;
   }
 
   /**
