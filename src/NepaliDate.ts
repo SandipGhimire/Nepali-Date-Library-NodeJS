@@ -226,7 +226,7 @@ export class NepaliDate {
    * @returns Day of week (0-6, 0 = Sunday)
    */
   public getDay(): number {
-    return this.timestamp.getUTCDay();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCDay();
   }
 
   /**
@@ -242,7 +242,7 @@ export class NepaliDate {
    * @returns Hour (0-23)
    */
   public getHours(): number {
-    return this.timestamp.getUTCHours();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCHours();
   }
 
   /**
@@ -250,7 +250,7 @@ export class NepaliDate {
    * @returns Minutes (0-59)
    */
   public getMinutes(): number {
-    return this.timestamp.getUTCMinutes();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCMinutes();
   }
 
   /**
@@ -258,7 +258,7 @@ export class NepaliDate {
    * @returns Seconds (0-59)
    */
   public getSeconds(): number {
-    return this.timestamp.getUTCSeconds();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCSeconds();
   }
 
   /**
@@ -266,7 +266,7 @@ export class NepaliDate {
    * @returns Milliseconds (0-999)
    */
   public getMilliseconds(): number {
-    return this.timestamp.getMilliseconds();
+    return this.timestamp.getUTCMilliseconds();
   }
 
   /**
@@ -442,9 +442,9 @@ export class NepaliDate {
    */
   public startOfDay(): NepaliDate {
     const result = this.clone();
-    const date = new Date(result.timestamp);
-    date.setUTCHours(0, 0, 0, 0);
-    result.timestamp = date;
+    const nepalTime = this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS;
+    const nepalDayStart = Math.floor(nepalTime / 86400000) * 86400000;
+    result.timestamp = new Date(nepalDayStart - NEPAL_UTC_OFFSET_MS);
     return result;
   }
 
@@ -454,9 +454,9 @@ export class NepaliDate {
    */
   public endOfDay(): NepaliDate {
     const result = this.clone();
-    const date = new Date(result.timestamp);
-    date.setUTCHours(23, 59, 59, 999);
-    result.timestamp = date;
+    const nepalTime = this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS;
+    const nepalDayStart = Math.floor(nepalTime / 86400000) * 86400000;
+    result.timestamp = new Date(nepalDayStart + 86400000 - 1 - NEPAL_UTC_OFFSET_MS);
     return result;
   }
 

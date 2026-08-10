@@ -225,12 +225,12 @@ describe("NepaliDate", () => {
   // Getters for the underlying instant
   // -------------------------------------------------------------------
   describe("time getters", () => {
-    it("returns hours, minutes, seconds, milliseconds and epoch time", () => {
+    it("returns hours, minutes, seconds, milliseconds and epoch time in Nepal local time", () => {
       const ad = new Date(Date.UTC(2023, 3, 28, 13, 45, 30, 250));
       const d = new NepaliDate(ad);
 
-      expect(d.getHours()).toBe(13);
-      expect(d.getMinutes()).toBe(45);
+      expect(d.getHours()).toBe(19);
+      expect(d.getMinutes()).toBe(30);
       expect(d.getSeconds()).toBe(30);
       expect(d.getMilliseconds()).toBe(250);
       expect(d.getTime()).toBe(ad.getTime());
@@ -241,11 +241,13 @@ describe("NepaliDate", () => {
   // Start/end of day/week/month/year
   // -------------------------------------------------------------------
   describe("start/end helpers", () => {
-    it("startOfDay and endOfDay", () => {
+    it("startOfDay and endOfDay in Nepal local time", () => {
       const d = new NepaliDate(2080, 0, 15);
 
-      expect(d.startOfDay().getEnglishDate().toISOString()).toBe("2023-04-28T00:00:00.000Z");
-      expect(d.endOfDay().getEnglishDate().toISOString()).toBe("2023-04-28T23:59:59.999Z");
+      expect(d.startOfDay().getEnglishDate().toISOString()).toBe("2023-04-27T18:15:00.000Z");
+      expect(d.startOfDay().getHours()).toBe(0);
+      expect(d.endOfDay().getEnglishDate().toISOString()).toBe("2023-04-28T18:14:59.999Z");
+      expect(d.endOfDay().getHours()).toBe(23);
       expect(d.endOfDay().getMilliseconds()).toBe(999);
     });
 
