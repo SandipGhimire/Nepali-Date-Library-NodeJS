@@ -4,6 +4,7 @@ import {
   MONTH_NP,
   MONTH_SHORT_EN,
   MONTH_SHORT_NP,
+  NEPAL_UTC_OFFSET_MS,
   NEPALI_DATE_MAP,
   WEEK_EN,
   WEEK_NP,
@@ -105,7 +106,12 @@ export class NepaliDate {
   private setEnglishDate(date: Date): void {
     this.timestamp = date;
 
-    const utcTime = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const nepalWallClock = new Date(date.getTime() + NEPAL_UTC_OFFSET_MS);
+    const utcTime = Date.UTC(
+      nepalWallClock.getUTCFullYear(),
+      nepalWallClock.getUTCMonth(),
+      nepalWallClock.getUTCDate()
+    );
 
     let daysCount = Math.floor((utcTime - EPOCH) / 86400000);
     let idx = Math.floor(daysCount / 366);
@@ -220,7 +226,7 @@ export class NepaliDate {
    * @returns Day of week (0-6, 0 = Sunday)
    */
   public getDay(): number {
-    return this.timestamp.getUTCDay();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCDay();
   }
 
   /**
@@ -236,7 +242,7 @@ export class NepaliDate {
    * @returns Hour (0-23)
    */
   public getHours(): number {
-    return this.timestamp.getHours();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCHours();
   }
 
   /**
@@ -244,7 +250,7 @@ export class NepaliDate {
    * @returns Minutes (0-59)
    */
   public getMinutes(): number {
-    return this.timestamp.getMinutes();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCMinutes();
   }
 
   /**
@@ -252,7 +258,7 @@ export class NepaliDate {
    * @returns Seconds (0-59)
    */
   public getSeconds(): number {
-    return this.timestamp.getSeconds();
+    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCSeconds();
   }
 
   /**
@@ -260,7 +266,7 @@ export class NepaliDate {
    * @returns Milliseconds (0-999)
    */
   public getMilliseconds(): number {
-    return this.timestamp.getMilliseconds();
+    return this.timestamp.getUTCMilliseconds();
   }
 
   /**
@@ -435,9 +441,11 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the start of the day
    */
   public startOfDay(): NepaliDate {
-    const date = new Date(this.timestamp);
-    date.setHours(0, 0, 0, 0);
-    return new NepaliDate(date);
+    const result = this.clone();
+    const nepalTime = this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS;
+    const nepalDayStart = Math.floor(nepalTime / 86400000) * 86400000;
+    result.timestamp = new Date(nepalDayStart - NEPAL_UTC_OFFSET_MS);
+    return result;
   }
 
   /**
@@ -445,9 +453,11 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the end of the day
    */
   public endOfDay(): NepaliDate {
-    const date = new Date(this.timestamp);
-    date.setHours(23, 59, 59, 999);
-    return new NepaliDate(date);
+    const result = this.clone();
+    const nepalTime = this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS;
+    const nepalDayStart = Math.floor(nepalTime / 86400000) * 86400000;
+    result.timestamp = new Date(nepalDayStart + 86400000 - 1 - NEPAL_UTC_OFFSET_MS);
+    return result;
   }
 
   /**
