@@ -1,43 +1,52 @@
-# NepaliDate Library
+# NepaliDate Library (NodeJS & TypeScript) 🇳🇵
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/SandipGhimire/Nepali-Date-Library-NodeJS/blob/master/LICENSE)
-[![Docs](https://img.shields.io/badge/Docs-Official%20Wiki-blue)](https://nepalidate.sandip-ghimire.com.np)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-black)](https://github.com/SandipGhimire/Nepali-Date-Library-NodeJS)
+[![npm version](https://img.shields.io/npm/v/nepali-date-library.svg?style=flat-square&color=E1804B)](https://www.npmjs.com/package/nepali-date-library)
+[![npm downloads](https://img.shields.io/npm/dm/nepali-date-library.svg?style=flat-square&color=27845A)](https://www.npmjs.com/package/nepali-date-library)
+[![Documentation](https://img.shields.io/badge/Docs-nepali--pkg.date-E1804B?style=flat-square&logo=google-chrome&logoColor=white)](https://nepali-pkg.date/docs/nodejs)
+[![Date Converter](https://img.shields.io/badge/Converter-BS%20%E2%86%94%20AD-24292E?style=flat-square)](https://nepali-pkg.date/converter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](./LICENSE)
 
-## Overview
+A lightweight, zero-dependency, high-performance library and **Nepali Date Converter** for working with **Bikram Sambat (BS)** dates in modern TypeScript and JavaScript.
 
-**NepaliDate** is a lightweight, high-performance library for working with Nepali (Bikram Sambat) dates in modern TypeScript and JavaScript environments. It provides seamless conversion between BS and Gregorian (AD) dates, support for fiscal years, quarters, and comprehensive formatting options.
+---
 
-## 📚 Documentation
+### 📖 Full Documentation & Live Tools
 
-For detailed guides, API references, and examples, please visit our **official Wiki**:
+All guides, complete API references, Devanagari format tokens, fiscal year helpers, and interactive playground are hosted on our official documentation portal:
 
-👉 **[nepalidate.sandip-ghimire.com.np](https://nepalidate.sandip-ghimire.com.np)**
+👉 **[https://nepali-pkg.date/docs/nodejs](https://nepali-pkg.date/docs/nodejs)**  
+🔄 **[Try the Live Date Converter](https://nepali-pkg.date/converter)**
 
-## Installation
+---
 
-```sh
+## 📦 Installation
+
+```bash
 npm install nepali-date-library
-# or
-pnpm add nepali-date-library
 ```
 
-## Quick Start
+---
 
-1. **Basic Usage** in your project:
+## 🚀 Quick Example
 
-   ```ts
-   import { NepaliDate, ADtoBS, BStoAD } from "nepali-date-library";
-   ```
+```ts
+import { NepaliDate } from "nepali-date-library";
 
-const now = new NepaliDate();
-console.log(now.format("YYYY-MM-DD"));
-
+const today = new NepaliDate();
+console.log(today.format("YYYY-MM-DD")); // "2081-07-01"
 ```
 
-For more advanced usage, please refer to the [Wiki](https://nepalidate.sandip-ghimire.com.np).
+> **Note**: For complete API methods, bidirectional conversion (`ADtoBS` / `BStoAD`), date arithmetic, and fiscal year guides, visit [**https://nepali-pkg.date/docs/nodejs**](https://nepali-pkg.date/docs/nodejs).
 
-## License
+---
 
-[MIT](https://github.com/SandipGhimire/Nepali-Date-Library-NodeJS/blob/master/LICENSE) © [Sandip Ghimire](https://github.com/SandipGhimire)
-```
+## 🤝 Contributing
+
+Contributions are welcome! Please read our [**Contributing Guide**](./CONTRIBUTING.md) or visit our [**Online Contribution Guide**](https://nepali-pkg.date/docs/contribution).
+
+---
+
+## 📄 License
+
+MIT © [Sandip Ghimire](https://github.com/SandipGhimire)  
+Made with ❤️ by [Sandip Ghimire](https://github.com/SandipGhimire).
