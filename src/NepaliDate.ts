@@ -1,4 +1,5 @@
 import {
+  BUNDLED_CONSTANTS,
   EPOCH,
   MONTH_EN,
   MONTH_NP,
@@ -12,6 +13,8 @@ import {
   WEEK_SHORT_NP,
 } from "./Helper/Constants";
 import format from "./Helper/DateFormatter";
+import { processConstants } from "./Helper/Utils";
+import type { NepaliConstants, ProcessedNepaliConstants } from "./types";
 
 /**
  * Parses a date string into Nepali date components
@@ -65,6 +68,25 @@ export class NepaliDate {
 
   /** Nepali day of month (1-32) */
   public day!: number;
+
+  private _rawConstants?: NepaliConstants;
+  private _cachedProcessedConstants?: ProcessedNepaliConstants;
+
+  protected _getConstants(): NepaliConstants {
+    return BUNDLED_CONSTANTS;
+  }
+
+  private getConstants(): ProcessedNepaliConstants {
+    const currentRaw = this._getConstants();
+    if (currentRaw === BUNDLED_CONSTANTS) {
+      return BUNDLED_CONSTANTS;
+    }
+    if (this._rawConstants !== currentRaw || !this._cachedProcessedConstants) {
+      this._rawConstants = currentRaw;
+      this._cachedProcessedConstants = processConstants(currentRaw);
+    }
+    return this._cachedProcessedConstants;
+  }
 
   /**
    * Creates a NepaliDate instance

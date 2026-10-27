@@ -839,3 +839,20 @@ export const MONTH_SHORT_NP = ["बै", "जे", "अ", "श्रा", "भ�
  * Array of Nepali numbers.
  */
 export const NUMBER_NP = ["०", "१", "२", "३", "४", "५", "६", "७", "८", "९"];
+
+import type { ProcessedNepaliConstants } from "../types";
+
+export const BUNDLED_CONSTANTS: ProcessedNepaliConstants = {
+  dateMap: NEPALI_DATE_MAP,
+  epoch: EPOCH,
+  utcOffsetMs: NEPAL_UTC_OFFSET_MS,
+  weekEn: WEEK_EN,
+  weekShortEn: WEEK_SHORT_EN,
+  weekNp: WEEK_NP,
+  weekShortNp: WEEK_SHORT_NP,
+  monthEn: MONTH_EN,
+  monthShortEn: MONTH_SHORT_EN,
+  monthNp: MONTH_NP,
+  monthShortNp: MONTH_SHORT_NP,
+  numberNp: NUMBER_NP,
+};
