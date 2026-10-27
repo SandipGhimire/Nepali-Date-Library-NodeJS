@@ -2,7 +2,7 @@ import type { NepaliConstants, NepaliDateMapEntry, ProcessedDateMapEntry, Proces
 
 export function processDateMap(dateMap: NepaliDateMapEntry[]): ProcessedDateMapEntry[] {
   const len = dateMap.length;
-  const result: ProcessedDateMapEntry[] = new Array(len);
+  const result: ProcessedDateMapEntry[] = new Array<ProcessedDateMapEntry>(len);
   let totalDaysAccumulator = 0;
 
   for (let i = 0; i < len; i += 1) {

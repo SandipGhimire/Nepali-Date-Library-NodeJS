@@ -1,29 +1,20 @@
-import {
-  BUNDLED_CONSTANTS,
-  EPOCH,
-  MONTH_EN,
-  MONTH_NP,
-  MONTH_SHORT_EN,
-  MONTH_SHORT_NP,
-  NEPAL_UTC_OFFSET_MS,
-  NEPALI_DATE_MAP,
-  WEEK_EN,
-  WEEK_NP,
-  WEEK_SHORT_EN,
-  WEEK_SHORT_NP,
-} from "./Helper/Constants";
+import { BUNDLED_CONSTANTS } from "./Helper/Constants";
 import format from "./Helper/DateFormatter";
 import { processConstants } from "./Helper/Utils";
-import type { NepaliConstants, ProcessedNepaliConstants } from "./types";
+import type { NepaliConstants, ProcessedDateMapEntry, ProcessedNepaliConstants } from "./types";
 
 /**
  * Parses a date string into Nepali date components
  * @param dateString Date string in format YYYY-MM-DD, YYYY/MM/DD, or YYYY.MM.DD
+ * @param dateMap Optional Nepali date map to validate against; falls back to BUNDLED_CONSTANTS
  * @returns Tuple containing [year, month, day] where month is 0-indexed
  * @throws Error if the date format is invalid or date is out of range
  * @private
  */
-function _parse(dateString: string): [number, number, number] {
+function _parse(
+  dateString: string,
+  dateMap: ProcessedDateMapEntry[] | NepaliConstants["dateMap"] = BUNDLED_CONSTANTS.dateMap
+): [number, number, number] {
   const parts = dateString.split(/[-./]/, 3);
 
   const [year, month = 1, day = 1] = parts.map((d) => {
@@ -34,7 +25,7 @@ function _parse(dateString: string): [number, number, number] {
     return n;
   });
 
-  if (year < NEPALI_DATE_MAP[0].year || year >= NEPALI_DATE_MAP[0].year + NEPALI_DATE_MAP.length) {
+  if (year < dateMap[0].year || year >= dateMap[0].year + dateMap.length) {
     throw new Error("Nepal year out of range");
   }
 
@@ -42,7 +33,7 @@ function _parse(dateString: string): [number, number, number] {
     throw new Error("Invalid nepali month must be between 1 - 12");
   }
 
-  const daysInMonth = NEPALI_DATE_MAP[year - NEPALI_DATE_MAP[0].year].days[month - 1];
+  const daysInMonth = dateMap[year - dateMap[0].year].days[month - 1];
   if (day < 1 || day > daysInMonth) {
     throw new Error(
       `Invalid nepali date must be between 1 - ${String(daysInMonth)} in ${String(year)} ${String(month)}`
@@ -110,7 +101,7 @@ export class NepaliDate {
         throw new Error("Invalid argument syntax");
       }
     } else if (typeof yearOrDate === "string") {
-      this.set(..._parse(yearOrDate));
+      this.set(..._parse(yearOrDate, this.getConstants().dateMap));
     } else if (typeof yearOrDate === "number" && month !== undefined && day !== undefined) {
       this.set(yearOrDate, month, day);
     } else if (typeof yearOrDate === "number") {
@@ -128,24 +119,34 @@ export class NepaliDate {
   private setEnglishDate(date: Date): void {
     this.timestamp = date;
 
-    const nepalWallClock = new Date(date.getTime() + NEPAL_UTC_OFFSET_MS);
+    const { dateMap, epoch, utcOffsetMs } = this.getConstants();
+    const nepalWallClock = new Date(date.getTime() + utcOffsetMs);
     const utcTime = Date.UTC(
       nepalWallClock.getUTCFullYear(),
       nepalWallClock.getUTCMonth(),
       nepalWallClock.getUTCDate()
     );
 
-    let daysCount = Math.floor((utcTime - EPOCH) / 86400000);
-    let idx = Math.floor(daysCount / 366);
+    let daysCount = Math.floor((utcTime - epoch) / 86400000);
+    if (daysCount < 0 || daysCount >= dateMap[dateMap.length - 1].daysTillNow) {
+      throw new Error("Date is out of supported range");
+    }
 
-    while (daysCount >= NEPALI_DATE_MAP[idx].daysTillNow) {
+    let idx = Math.floor(daysCount / 366);
+    if (idx < 0) {
+      idx = 0;
+    } else if (idx >= dateMap.length) {
+      idx = dateMap.length - 1;
+    }
+
+    while (daysCount >= dateMap[idx].daysTillNow) {
       idx += 1;
     }
 
-    const prevTillNow = NEPALI_DATE_MAP[idx - 1]?.daysTillNow ?? 0;
+    const prevTillNow = dateMap[idx - 1]?.daysTillNow ?? 0;
 
     daysCount -= prevTillNow;
-    const tmp = NEPALI_DATE_MAP[idx];
+    const tmp = dateMap[idx];
 
     this.year = tmp.year;
     this.month = 0;
@@ -165,11 +166,12 @@ export class NepaliDate {
    * @param date Nepali day (1-32)
    */
   public set(year: number, month: number, date: number): void {
-    const idx = year + Math.floor(month / 12) - NEPALI_DATE_MAP[0].year;
-    if (idx < 0 || idx >= NEPALI_DATE_MAP.length) {
+    const { dateMap, epoch } = this.getConstants();
+    const idx = year + Math.floor(month / 12) - dateMap[0].year;
+    if (idx < 0 || idx >= dateMap.length) {
       throw new Error("Nepal year out of range!");
     }
-    const tmp = NEPALI_DATE_MAP[idx];
+    const tmp = dateMap[idx];
     let d = tmp.daysTillNow - tmp.totalDays;
 
     const m = month % 12;
@@ -179,7 +181,7 @@ export class NepaliDate {
       d += tmp.days[i];
     }
     d += date - 1;
-    const utcTimestamp = EPOCH + d * 86400000;
+    const utcTimestamp = epoch + d * 86400000;
     const utcDate = new Date(utcTimestamp);
 
     this.setEnglishDate(utcDate);
@@ -199,7 +201,7 @@ export class NepaliDate {
    * @returns A new NepaliDate instance with the same date and time
    */
   public clone(): NepaliDate {
-    return new NepaliDate(this);
+    return new (this.constructor as typeof NepaliDate)(this);
   }
 
   /**
@@ -224,7 +226,7 @@ export class NepaliDate {
    * @throws Error if the date format is invalid or date is out of range
    */
   public parse(dateString: string): void {
-    this.set(..._parse(dateString));
+    this.set(..._parse(dateString, this.getConstants().dateMap));
   }
 
   /**
@@ -248,7 +250,7 @@ export class NepaliDate {
    * @returns Day of week (0-6, 0 = Sunday)
    */
   public getDay(): number {
-    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCDay();
+    return new Date(this.timestamp.getTime() + this.getConstants().utcOffsetMs).getUTCDay();
   }
 
   /**
@@ -264,7 +266,7 @@ export class NepaliDate {
    * @returns Hour (0-23)
    */
   public getHours(): number {
-    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCHours();
+    return new Date(this.timestamp.getTime() + this.getConstants().utcOffsetMs).getUTCHours();
   }
 
   /**
@@ -272,7 +274,7 @@ export class NepaliDate {
    * @returns Minutes (0-59)
    */
   public getMinutes(): number {
-    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCMinutes();
+    return new Date(this.timestamp.getTime() + this.getConstants().utcOffsetMs).getUTCMinutes();
   }
 
   /**
@@ -280,7 +282,7 @@ export class NepaliDate {
    * @returns Seconds (0-59)
    */
   public getSeconds(): number {
-    return new Date(this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS).getUTCSeconds();
+    return new Date(this.timestamp.getTime() + this.getConstants().utcOffsetMs).getUTCSeconds();
   }
 
   /**
@@ -330,7 +332,7 @@ export class NepaliDate {
    */
   public addDays(days: number): NepaliDate {
     const newTimestamp = new Date(this.timestamp.getTime() + days * 86400000);
-    return new NepaliDate(newTimestamp);
+    return new (this.constructor as typeof NepaliDate)(newTimestamp);
   }
 
   /**
@@ -349,16 +351,17 @@ export class NepaliDate {
       newMonth += 12;
     }
 
-    const yearIndex = newYear - NEPALI_DATE_MAP[0].year;
-    if (yearIndex < 0 || yearIndex >= NEPALI_DATE_MAP.length) {
+    const { dateMap } = this.getConstants();
+    const yearIndex = newYear - dateMap[0].year;
+    if (yearIndex < 0 || yearIndex >= dateMap.length) {
       throw new Error("Resulting date is out of supported range");
     }
 
-    const daysInNewMonth = NEPALI_DATE_MAP[yearIndex].days[newMonth];
+    const daysInNewMonth = dateMap[yearIndex].days[newMonth];
 
     const newDay = Math.min(this.day, daysInNewMonth);
 
-    return new NepaliDate(newYear, newMonth, newDay);
+    return new (this.constructor as typeof NepaliDate)(newYear, newMonth, newDay);
   }
 
   /**
@@ -369,16 +372,17 @@ export class NepaliDate {
   public addYears(years: number): NepaliDate {
     const newYear = this.year + years;
 
-    if (newYear < NEPALI_DATE_MAP[0].year || newYear >= NEPALI_DATE_MAP[0].year + NEPALI_DATE_MAP.length) {
+    const { dateMap } = this.getConstants();
+    if (newYear < dateMap[0].year || newYear >= dateMap[0].year + dateMap.length) {
       throw new Error("Resulting date is out of supported range");
     }
 
-    const yearIndex = newYear - NEPALI_DATE_MAP[0].year;
+    const yearIndex = newYear - dateMap[0].year;
 
-    const daysInMonth = NEPALI_DATE_MAP[yearIndex].days[this.month];
+    const daysInMonth = dateMap[yearIndex].days[this.month];
     const newDay = Math.min(this.day, daysInMonth);
 
-    return new NepaliDate(newYear, this.month, newDay);
+    return new (this.constructor as typeof NepaliDate)(newYear, this.month, newDay);
   }
 
   /**
@@ -386,7 +390,7 @@ export class NepaliDate {
    * @returns JavaScript Date object representing the minimum supported date
    */
   public static minimum(): Date {
-    return new Date(EPOCH);
+    return new Date(BUNDLED_CONSTANTS.epoch);
   }
 
   /**
@@ -394,11 +398,8 @@ export class NepaliDate {
    * @returns JavaScript Date object representing the maximum supported date
    */
   public static maximum(): Date {
-    // daysTillNow is a count (1-indexed), so the last valid day sits at
-    // offset (daysTillNow - 1); using daysTillNow directly landed one day
-    // past the actual last supported date and couldn't round-trip back
-    // into a NepaliDate.
-    return new Date(EPOCH + (NEPALI_DATE_MAP[NEPALI_DATE_MAP.length - 1].daysTillNow - 1) * 86400000);
+    const { dateMap, epoch } = BUNDLED_CONSTANTS;
+    return new Date(epoch + (dateMap[dateMap.length - 1].daysTillNow - 1) * 86400000);
   }
 
   /**
@@ -409,8 +410,9 @@ export class NepaliDate {
     if (month !== undefined && (month < 0 || month > 11)) {
       throw new Error("Invalid month index, must be between 0-11");
     }
-    const yearIndex = (year ?? this.year) - NEPALI_DATE_MAP[0].year;
-    return NEPALI_DATE_MAP[yearIndex].days[month ?? this.month];
+    const { dateMap } = this.getConstants();
+    const yearIndex = (year ?? this.year) - dateMap[0].year;
+    return dateMap[yearIndex].days[month ?? this.month];
   }
 
   /**
@@ -418,8 +420,9 @@ export class NepaliDate {
    * @returns true if the year is a leap year, false otherwise
    */
   public isLeapYear(): boolean {
-    const yearIndex = this.year - NEPALI_DATE_MAP[0].year;
-    return NEPALI_DATE_MAP[yearIndex].totalDays >= 366;
+    const { dateMap } = this.getConstants();
+    const yearIndex = this.year - dateMap[0].year;
+    return dateMap[yearIndex].totalDays >= 366;
   }
 
   /**
@@ -427,7 +430,7 @@ export class NepaliDate {
    * @returns Number of weeks in the month
    */
   public getWeeksInMonth(): number {
-    const firstDay = new NepaliDate(this.year, this.month, 1);
+    const firstDay = new (this.constructor as typeof NepaliDate)(this.year, this.month, 1);
     const firstDayOfWeek = firstDay.getDay();
     const totalDays = this.daysInMonth();
     return Math.ceil((firstDayOfWeek + totalDays) / 7);
@@ -464,9 +467,10 @@ export class NepaliDate {
    */
   public startOfDay(): NepaliDate {
     const result = this.clone();
-    const nepalTime = this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS;
+    const { utcOffsetMs } = this.getConstants();
+    const nepalTime = this.timestamp.getTime() + utcOffsetMs;
     const nepalDayStart = Math.floor(nepalTime / 86400000) * 86400000;
-    result.timestamp = new Date(nepalDayStart - NEPAL_UTC_OFFSET_MS);
+    result.timestamp = new Date(nepalDayStart - utcOffsetMs);
     return result;
   }
 
@@ -476,9 +480,10 @@ export class NepaliDate {
    */
   public endOfDay(): NepaliDate {
     const result = this.clone();
-    const nepalTime = this.timestamp.getTime() + NEPAL_UTC_OFFSET_MS;
+    const { utcOffsetMs } = this.getConstants();
+    const nepalTime = this.timestamp.getTime() + utcOffsetMs;
     const nepalDayStart = Math.floor(nepalTime / 86400000) * 86400000;
-    result.timestamp = new Date(nepalDayStart + 86400000 - 1 - NEPAL_UTC_OFFSET_MS);
+    result.timestamp = new Date(nepalDayStart + 86400000 - 1 - utcOffsetMs);
     return result;
   }
 
@@ -533,7 +538,7 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the first day of the month
    */
   public startOfMonth(): NepaliDate {
-    return new NepaliDate(this.year, this.month, 1);
+    return new (this.constructor as typeof NepaliDate)(this.year, this.month, 1);
   }
 
   /**
@@ -542,7 +547,7 @@ export class NepaliDate {
    */
   public endOfMonth(): NepaliDate {
     const daysInMonth = this.daysInMonth();
-    return new NepaliDate(this.year, this.month, daysInMonth).endOfDay();
+    return new (this.constructor as typeof NepaliDate)(this.year, this.month, daysInMonth).endOfDay();
   }
 
   /**
@@ -550,7 +555,7 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the first day of the year
    */
   public startOfYear(): NepaliDate {
-    return new NepaliDate(this.year, 0, 1);
+    return new (this.constructor as typeof NepaliDate)(this.year, 0, 1);
   }
 
   /**
@@ -558,9 +563,10 @@ export class NepaliDate {
    * @returns A new NepaliDate set to the last day of the year
    */
   public endOfYear(): NepaliDate {
-    const yearIndex = this.year - NEPALI_DATE_MAP[0].year;
-    const daysInChaitra = NEPALI_DATE_MAP[yearIndex].days[11];
-    return new NepaliDate(this.year, 11, daysInChaitra).endOfDay();
+    const { dateMap } = this.getConstants();
+    const yearIndex = this.year - dateMap[0].year;
+    const daysInChaitra = dateMap[yearIndex].days[11];
+    return new (this.constructor as typeof NepaliDate)(this.year, 11, daysInChaitra).endOfDay();
   }
 
   /**
@@ -574,9 +580,9 @@ export class NepaliDate {
       throw new Error("Invalid month index, must be between 0-11");
     }
     if (nepali) {
-      return short ? MONTH_SHORT_NP[month] : MONTH_NP[month];
+      return short ? BUNDLED_CONSTANTS.monthShortNp[month] : BUNDLED_CONSTANTS.monthNp[month];
     } else {
-      return short ? MONTH_SHORT_EN[month] : MONTH_EN[month];
+      return short ? BUNDLED_CONSTANTS.monthShortEn[month] : BUNDLED_CONSTANTS.monthEn[month];
     }
   }
 
@@ -592,9 +598,9 @@ export class NepaliDate {
     }
 
     if (nepali) {
-      return short ? WEEK_SHORT_NP[day] : WEEK_NP[day];
+      return short ? BUNDLED_CONSTANTS.weekShortNp[day] : BUNDLED_CONSTANTS.weekNp[day];
     } else {
-      return short ? WEEK_SHORT_EN[day] : WEEK_EN[day];
+      return short ? BUNDLED_CONSTANTS.weekShortEn[day] : BUNDLED_CONSTANTS.weekEn[day];
     }
   }
 
@@ -607,7 +613,8 @@ export class NepaliDate {
    */
   public static isValid(year: number, month: number, day: number): boolean {
     try {
-      if (year < NEPALI_DATE_MAP[0].year || year >= NEPALI_DATE_MAP[0].year + NEPALI_DATE_MAP.length) {
+      const dateMap = BUNDLED_CONSTANTS.dateMap;
+      if (year < dateMap[0].year || year >= dateMap[0].year + dateMap.length) {
         return false;
       }
 
@@ -615,8 +622,8 @@ export class NepaliDate {
         return false;
       }
 
-      const yearIndex = year - NEPALI_DATE_MAP[0].year;
-      const daysInMonth = NEPALI_DATE_MAP[yearIndex].days[month];
+      const yearIndex = year - dateMap[0].year;
+      const daysInMonth = dateMap[yearIndex].days[month];
 
       if (day < 1 || day > daysInMonth) {
         return false;
@@ -633,7 +640,27 @@ export class NepaliDate {
    * @returns true if the date is valid, false otherwise
    */
   public isValid(): boolean {
-    return NepaliDate.isValid(this.year, this.month, this.day);
+    try {
+      const dateMap = this.getConstants().dateMap;
+      if (this.year < dateMap[0].year || this.year >= dateMap[0].year + dateMap.length) {
+        return false;
+      }
+
+      if (this.month < 0 || this.month > 11) {
+        return false;
+      }
+
+      const yearIndex = this.year - dateMap[0].year;
+      const daysInMonth = dateMap[yearIndex].days[this.month];
+
+      if (this.day < 1 || this.day > daysInMonth) {
+        return false;
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -658,6 +685,8 @@ export class NepaliDate {
       throw new Error("Invalid year or month");
     }
 
+    const dateMap = BUNDLED_CONSTANTS.dateMap;
+
     const prevMonthMap: { year: number; month: number; days: number[] } = {
       year: 0,
       month: 0,
@@ -674,12 +703,12 @@ export class NepaliDate {
       days: [],
     };
 
-    const yearIndex = year - NEPALI_DATE_MAP[0].year;
+    const yearIndex = year - dateMap[0].year;
 
     const firstDay = new NepaliDate(year, month, 1);
     const firstDayOfWeek = firstDay.getDay();
 
-    const daysInMonth = NEPALI_DATE_MAP[yearIndex].days[month];
+    const daysInMonth = dateMap[yearIndex].days[month];
 
     currentMonthMap.year = year;
     currentMonthMap.month = month;
@@ -695,14 +724,14 @@ export class NepaliDate {
       prevYear--;
     }
 
-    if (prevYear >= NEPALI_DATE_MAP[0].year) {
+    if (prevYear >= dateMap[0].year) {
       prevMonthMap.year = prevYear;
       prevMonthMap.month = prevMonth;
     }
 
-    if (prevYear >= NEPALI_DATE_MAP[0].year && firstDayOfWeek > 0) {
-      const prevMonthIndex = prevYear - NEPALI_DATE_MAP[0].year;
-      const daysInPrevMonth = NEPALI_DATE_MAP[prevMonthIndex].days[prevMonth];
+    if (prevYear >= dateMap[0].year && firstDayOfWeek > 0) {
+      const prevMonthIndex = prevYear - dateMap[0].year;
+      const daysInPrevMonth = dateMap[prevMonthIndex].days[prevMonth];
 
       for (let i = 0; i < firstDayOfWeek; i++) {
         prevMonthMap.days.push(daysInPrevMonth - firstDayOfWeek + i + 1);
@@ -718,14 +747,14 @@ export class NepaliDate {
       nextYear++;
     }
 
-    if (nextYear < NEPALI_DATE_MAP[0].year + NEPALI_DATE_MAP.length) {
+    if (nextYear < dateMap[0].year + dateMap.length) {
       nextMonthMap.year = nextYear;
       nextMonthMap.month = nextMonth;
     }
 
     const remainingDays = 42 - firstDayOfWeek - currentMonthMap.days.length;
 
-    if (nextYear < NEPALI_DATE_MAP[0].year + NEPALI_DATE_MAP.length && remainingDays > 0) {
+    if (nextYear < dateMap[0].year + dateMap.length && remainingDays > 0) {
       for (let i = 1; i <= remainingDays; i++) {
         nextMonthMap.days.push(i);
       }
@@ -801,11 +830,11 @@ export class NepaliDate {
       throw new Error("Quarter must be an integer between 1 and 4");
     }
 
-    const nepaliYear = year ?? new NepaliDate().getYear();
+    const nepaliYear = year ?? new this().getYear();
     const startMonth = (quarter - 1) * 3;
 
-    const start = new NepaliDate(nepaliYear, startMonth, 1);
-    const end = new NepaliDate(nepaliYear, startMonth + 2, 1).endOfMonth();
+    const start = new this(nepaliYear, startMonth, 1);
+    const end = new this(nepaliYear, startMonth + 2, 1).endOfMonth();
 
     return { start, end };
   }
@@ -829,13 +858,13 @@ export class NepaliDate {
     Q3: { start: NepaliDate; end: NepaliDate };
     Q4: { start: NepaliDate; end: NepaliDate };
   } {
-    const nepaliYear = year ?? new NepaliDate().getYear();
+    const nepaliYear = year ?? new this().getYear();
 
     return {
-      Q1: NepaliDate.getQuarter(1, nepaliYear),
-      Q2: NepaliDate.getQuarter(2, nepaliYear),
-      Q3: NepaliDate.getQuarter(3, nepaliYear),
-      Q4: NepaliDate.getQuarter(4, nepaliYear),
+      Q1: this.getQuarter(1, nepaliYear),
+      Q2: this.getQuarter(2, nepaliYear),
+      Q3: this.getQuarter(3, nepaliYear),
+      Q4: this.getQuarter(4, nepaliYear),
     };
   }
 
@@ -845,7 +874,7 @@ export class NepaliDate {
    * @returns Current fiscal year
    */
   static getCurrentFiscalYear(): number {
-    const today = new NepaliDate();
+    const today = new this();
     const year = today.getYear();
     const month = today.getMonth();
 
@@ -864,7 +893,7 @@ export class NepaliDate {
       throw new Error("Quarter must be an integer between 1 and 4");
     }
 
-    const currentFiscalYear = fiscalYear ?? NepaliDate.getCurrentFiscalYear();
+    const currentFiscalYear = fiscalYear ?? this.getCurrentFiscalYear();
 
     let startYear = currentFiscalYear;
     let startMonth = (quarter - 1) * 3 + 3;
@@ -887,8 +916,8 @@ export class NepaliDate {
       endMonth -= 12;
     }
 
-    const start = new NepaliDate(startYear, startMonth, 1);
-    const end = new NepaliDate(endYear, endMonth, 1).endOfMonth();
+    const start = new this(startYear, startMonth, 1);
+    const end = new this(endYear, endMonth, 1).endOfMonth();
 
     return { start, end };
   }
@@ -913,9 +942,9 @@ export class NepaliDate {
    */
   getCurrentFiscalYearQuarterDates(): { start: NepaliDate; end: NepaliDate } {
     const currentQuarter = this.getCurrentFiscalYearQuarter();
-    const currentFiscalYear = NepaliDate.getCurrentFiscalYear();
+    const currentFiscalYear = (this.constructor as typeof NepaliDate).getCurrentFiscalYear();
 
-    return NepaliDate.getFiscalYearQuarter(currentQuarter, currentFiscalYear);
+    return (this.constructor as typeof NepaliDate).getFiscalYearQuarter(currentQuarter, currentFiscalYear);
   }
 
   /**
@@ -929,13 +958,13 @@ export class NepaliDate {
     Q3: { start: NepaliDate; end: NepaliDate };
     Q4: { start: NepaliDate; end: NepaliDate };
   } {
-    const year = fiscalYear ?? NepaliDate.getCurrentFiscalYear();
+    const year = fiscalYear ?? this.getCurrentFiscalYear();
 
     return {
-      Q1: NepaliDate.getFiscalYearQuarter(1, year),
-      Q2: NepaliDate.getFiscalYearQuarter(2, year),
-      Q3: NepaliDate.getFiscalYearQuarter(3, year),
-      Q4: NepaliDate.getFiscalYearQuarter(4, year),
+      Q1: this.getFiscalYearQuarter(1, year),
+      Q2: this.getFiscalYearQuarter(2, year),
+      Q3: this.getFiscalYearQuarter(3, year),
+      Q4: this.getFiscalYearQuarter(4, year),
     };
   }
 }

@@ -1,15 +1,17 @@
 import type { NepaliDate } from "../NepaliDate";
+import type { ProcessedNepaliConstants } from "../types";
 import {
-  MONTH_EN,
-  MONTH_SHORT_EN,
-  MONTH_NP,
-  MONTH_SHORT_NP,
-  NUMBER_NP,
-  WEEK_EN,
-  WEEK_SHORT_EN,
-  WEEK_NP,
-  WEEK_SHORT_NP,
+  BUNDLED_CONSTANTS,
 } from "./Constants";
+
+interface ConstantsHolder {
+  getConstants?: () => ProcessedNepaliConstants;
+}
+
+function getConstantsFromDate(date: NepaliDate): ProcessedNepaliConstants {
+  const holder = date as unknown as ConstantsHolder;
+  return typeof holder.getConstants === "function" ? holder.getConstants() : BUNDLED_CONSTANTS;
+}
 
 /**
  * Pads a number with a leading zero if it's less than 10.
@@ -24,12 +26,13 @@ function pad(n: number): string {
  * Converts a string of digits into Nepali digits.
  * Example: "123" → "१२३"
  * @param str String containing digits
+ * @param numberNp Nepali digit characters 0-9
  * @returns String with Nepali digits
  */
-function npDigit(str: string): string {
+function npDigit(str: string, numberNp: string[]): string {
   let res = "";
   for (let i = 0; i < str.length; i += 1) {
-    res += NUMBER_NP[str.charCodeAt(i) - 48];
+    res += numberNp[str.charCodeAt(i) - 48];
   }
   return res;
 }
@@ -64,13 +67,15 @@ function yearEn(size: number): DateFormatter {
  */
 function yearNp(size: number): DateFormatter {
   return (date: NepaliDate): string => {
+    const c = getConstantsFromDate(date);
+    const npDigits = c.numberNp;
     if (size <= 2) {
-      return npDigit(String(date.getYear()).substring(2));
+      return npDigit(String(date.getYear()).substring(2), npDigits);
     }
     if (size === 3) {
-      return npDigit(String(date.getYear()).substring(1));
+      return npDigit(String(date.getYear()).substring(1), npDigits);
     }
-    return npDigit(String(date.getYear()));
+    return npDigit(String(date.getYear()), npDigits);
   };
 }
 
@@ -87,10 +92,11 @@ function monthEn(size: number): DateFormatter {
     if (size === 2) {
       return pad(date.getMonth() + 1);
     }
+    const c = getConstantsFromDate(date);
     if (size === 3) {
-      return MONTH_SHORT_EN[date.getMonth()];
+      return c.monthShortEn[date.getMonth()];
     }
-    return MONTH_EN[date.getMonth()];
+    return c.monthEn[date.getMonth()];
   };
 }
 
@@ -101,16 +107,19 @@ function monthEn(size: number): DateFormatter {
  */
 function monthNp(size: number): DateFormatter {
   return (date: NepaliDate): string => {
+    const c = getConstantsFromDate(date);
+    const npDigits = c.numberNp;
+
     if (size === 1) {
-      return npDigit(String(date.getMonth() + 1));
+      return npDigit(String(date.getMonth() + 1), npDigits);
     }
     if (size === 2) {
-      return npDigit(pad(date.getMonth() + 1));
+      return npDigit(pad(date.getMonth() + 1), npDigits);
     }
     if (size === 3) {
-      return MONTH_SHORT_NP[date.getMonth()];
+      return c.monthShortNp[date.getMonth()];
     }
-    return MONTH_NP[date.getMonth()];
+    return c.monthNp[date.getMonth()];
   };
 }
 
@@ -127,10 +136,11 @@ function dateEn(size: number): DateFormatter {
     if (size === 2) {
       return pad(date.getDate());
     }
+    const c = getConstantsFromDate(date);
     if (size === 3) {
-      return WEEK_SHORT_EN[date.getDay()];
+      return c.weekShortEn[date.getDay()];
     }
-    return WEEK_EN[date.getDay()];
+    return c.weekEn[date.getDay()];
   };
 }
 
@@ -141,16 +151,19 @@ function dateEn(size: number): DateFormatter {
  */
 function dateNp(size: number): DateFormatter {
   return (date: NepaliDate): string => {
+    const c = getConstantsFromDate(date);
+    const npDigits = c.numberNp;
+
     if (size === 1) {
-      return npDigit(String(date.getDate()));
+      return npDigit(String(date.getDate()), npDigits);
     }
     if (size === 2) {
-      return npDigit(pad(date.getDate()));
+      return npDigit(pad(date.getDate()), npDigits);
     }
     if (size === 3) {
-      return WEEK_SHORT_NP[date.getDay()];
+      return c.weekShortNp[date.getDay()];
     }
-    return WEEK_NP[date.getDay()];
+    return c.weekNp[date.getDay()];
   };
 }
 

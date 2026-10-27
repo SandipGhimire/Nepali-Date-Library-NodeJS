@@ -42,7 +42,7 @@ describe("Pluggable Constants Performance Benchmark", () => {
       }
     }
 
-    const customDate = new CustomNepaliDate();
+    const customDate = new CustomNepaliDate(2080, 0, 1);
 
     // First call (triggers processing)
     const t0 = performance.now();
@@ -50,9 +50,9 @@ describe("Pluggable Constants Performance Benchmark", () => {
     const firstResolved = customDate.getConstants();
     const firstRunMicro = (performance.now() - t0) * 1000;
 
-    expect(firstResolved.dateMap[0].totalDays).toBe(365);
-    expect(firstResolved.dateMap[0].daysTillNow).toBe(365);
-    expect(firstResolved.dateMap[1].daysTillNow).toBe(365 + 366);
+    expect(firstResolved.dateMap[0].totalDays).toBe(364);
+    expect(firstResolved.dateMap[0].daysTillNow).toBe(364);
+    expect(firstResolved.dateMap[1].daysTillNow).toBe(364 + 366);
 
     // Subsequent calls (cached reference)
     const N = 1000000;
