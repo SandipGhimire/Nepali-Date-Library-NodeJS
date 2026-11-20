@@ -842,6 +842,10 @@ export const NUMBER_NP = ["०", "१", "२", "३", "४", "५", "६", "७"
 
 import type { ProcessedNepaliConstants } from "../types";
 
+/**
+ * The calendar data shipped with the library, already processed and read-only.
+ * Do not mutate it: build your own with `defineConstants()` and plug it into a `NepaliDate` subclass.
+ */
 export const BUNDLED_CONSTANTS: ProcessedNepaliConstants = {
   dateMap: NEPALI_DATE_MAP,
   epoch: EPOCH,
@@ -856,3 +860,23 @@ export const BUNDLED_CONSTANTS: ProcessedNepaliConstants = {
   monthShortNp: MONTH_SHORT_NP,
   numberNp: NUMBER_NP,
 };
+
+// The bundled data is shared by every date in the process, so lock it down:
+// an accidental push() or index write would otherwise corrupt all conversions.
+NEPALI_DATE_MAP.forEach((entry) => {
+  Object.freeze(entry.days);
+  Object.freeze(entry);
+});
+[
+  NEPALI_DATE_MAP,
+  WEEK_EN,
+  WEEK_SHORT_EN,
+  WEEK_NP,
+  WEEK_SHORT_NP,
+  MONTH_EN,
+  MONTH_SHORT_EN,
+  MONTH_NP,
+  MONTH_SHORT_NP,
+  NUMBER_NP,
+  BUNDLED_CONSTANTS,
+].forEach((value) => Object.freeze(value));

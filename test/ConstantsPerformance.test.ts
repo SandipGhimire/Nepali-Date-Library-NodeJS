@@ -10,7 +10,6 @@ describe("Pluggable Constants Performance Benchmark", () => {
 
     const start = performance.now();
     for (let i = 0; i < N; i++) {
-      // @ts-expect-error calling private getConstants for benchmark
       date.getConstants();
     }
     const elapsedMs = performance.now() - start;
@@ -37,7 +36,7 @@ describe("Pluggable Constants Performance Benchmark", () => {
     };
 
     class CustomNepaliDate extends NepaliDate {
-      protected _getConstants(): NepaliConstants {
+      protected static override constants(): NepaliConstants {
         return customData;
       }
     }
@@ -46,7 +45,6 @@ describe("Pluggable Constants Performance Benchmark", () => {
 
     // First call (triggers processing)
     const t0 = performance.now();
-    // @ts-expect-error calling private getConstants
     const firstResolved = customDate.getConstants();
     const firstRunMicro = (performance.now() - t0) * 1000;
 
@@ -58,7 +56,6 @@ describe("Pluggable Constants Performance Benchmark", () => {
     const N = 1000000;
     const start = performance.now();
     for (let i = 0; i < N; i++) {
-      // @ts-expect-error calling private getConstants
       customDate.getConstants();
     }
     const elapsedMs = performance.now() - start;

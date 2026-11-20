@@ -28,7 +28,7 @@ describe("Pluggable Constants and Subclass Extension", () => {
   };
 
   class ExtendedNepaliDate extends NepaliDate {
-    protected _getConstants(): NepaliConstants {
+    protected static override constants(): NepaliConstants {
       return customCalendar;
     }
   }
@@ -148,7 +148,7 @@ describe("Pluggable Constants and Subclass Extension", () => {
     let currentData = { ...customCalendar };
 
     class DynamicNepaliDate extends NepaliDate {
-      protected _getConstants(): NepaliConstants {
+      protected static override constants(): NepaliConstants {
         return currentData;
       }
     }

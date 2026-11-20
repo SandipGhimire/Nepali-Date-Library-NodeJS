@@ -1,7 +1,21 @@
 import { BUNDLED_CONSTANTS } from "./Helper/Constants";
 import format from "./Helper/DateFormatter";
-import { processConstants } from "./Helper/Utils";
+import { findYearIndex, processConstants } from "./Helper/Utils";
 import type { NepaliConstants, ProcessedDateMapEntry, ProcessedNepaliConstants } from "./types";
+
+/**
+ * Processed snapshots keyed by the raw constants object a subclass returns.
+ * Keyed weakly so dropping a custom calendar also drops its snapshot.
+ */
+const processedCache = new WeakMap<NepaliConstants, ProcessedNepaliConstants>();
+
+/**
+ * Static helpers use `this` to find the active calendar, which breaks when a method is
+ * detached (`const { isValid } = NepaliDate`). Fall back to the base class in that case.
+ */
+function resolveClass(self: unknown): typeof NepaliDate {
+  return typeof self === "function" ? (self as typeof NepaliDate) : NepaliDate;
+}
 
 /**
  * Parses a date string into Nepali date components
@@ -60,23 +74,47 @@ export class NepaliDate {
   /** Nepali day of month (1-32) */
   public day!: number;
 
-  private _rawConstants?: NepaliConstants;
-  private _cachedProcessedConstants?: ProcessedNepaliConstants;
-
-  protected _getConstants(): NepaliConstants {
+  /**
+   * Extension point: override in a subclass to plug in your own calendar data.
+   *
+   * Return the same object every time (a module-level constant, not a fresh literal),
+   * ideally one built with `defineConstants()`. The data is validated and snapshotted
+   * the first time it is used; to change the calendar later, return a different object.
+   *
+   * @example
+   * class MyNepaliDate extends NepaliDate {
+   *   protected static override constants() {
+   *     return MY_CONSTANTS;
+   *   }
+   * }
+   */
+  protected static constants(): NepaliConstants {
     return BUNDLED_CONSTANTS;
   }
 
-  private getConstants(): ProcessedNepaliConstants {
-    const currentRaw = this._getConstants();
-    if (currentRaw === BUNDLED_CONSTANTS) {
+  /**
+   * Returns the validated, read-only calendar data this class works with.
+   * Cheap to call: the result is cached per constants object.
+   * @throws Error if the subclass supplies invalid constants
+   */
+  public static getConstants(): ProcessedNepaliConstants {
+    const raw = resolveClass(this).constants();
+    if (raw === BUNDLED_CONSTANTS) {
       return BUNDLED_CONSTANTS;
     }
-    if (this._rawConstants !== currentRaw || !this._cachedProcessedConstants) {
-      this._rawConstants = currentRaw;
-      this._cachedProcessedConstants = processConstants(currentRaw);
+    let processed = processedCache.get(raw);
+    if (!processed) {
+      processed = processConstants(raw);
+      processedCache.set(raw, processed);
     }
-    return this._cachedProcessedConstants;
+    return processed;
+  }
+
+  /**
+   * Returns the validated, read-only calendar data used by this instance.
+   */
+  public getConstants(): ProcessedNepaliConstants {
+    return (this.constructor as typeof NepaliDate).getConstants();
   }
 
   /**
@@ -93,10 +131,15 @@ export class NepaliDate {
       if (yearOrDate instanceof Date) {
         this.setEnglishDate(yearOrDate);
       } else if (yearOrDate instanceof NepaliDate) {
-        this.timestamp = yearOrDate.timestamp;
-        this.year = yearOrDate.year;
-        this.month = yearOrDate.month;
-        this.day = yearOrDate.day;
+        if (yearOrDate.getConstants() === this.getConstants()) {
+          this.timestamp = new Date(yearOrDate.timestamp.getTime());
+          this.year = yearOrDate.year;
+          this.month = yearOrDate.month;
+          this.day = yearOrDate.day;
+        } else {
+          // Different calendar: recompute from the instant instead of trusting foreign fields.
+          this.setEnglishDate(new Date(yearOrDate.timestamp.getTime()));
+        }
       } else {
         throw new Error("Invalid argument syntax");
       }
@@ -132,30 +175,18 @@ export class NepaliDate {
       throw new Error("Date is out of supported range");
     }
 
-    let idx = Math.floor(daysCount / 366);
-    if (idx < 0) {
-      idx = 0;
-    } else if (idx >= dateMap.length) {
-      idx = dateMap.length - 1;
-    }
-
-    while (daysCount >= dateMap[idx].daysTillNow) {
-      idx += 1;
-    }
-
-    const prevTillNow = dateMap[idx - 1]?.daysTillNow ?? 0;
-
-    daysCount -= prevTillNow;
+    const idx = findYearIndex(dateMap, daysCount);
     const tmp = dateMap[idx];
+    daysCount -= tmp.daysTillNow - tmp.totalDays;
+
+    let month = 0;
+    while (daysCount >= tmp.days[month]) {
+      daysCount -= tmp.days[month];
+      month += 1;
+    }
 
     this.year = tmp.year;
-    this.month = 0;
-
-    while (daysCount >= tmp.days[this.month]) {
-      this.month += 1;
-      daysCount -= tmp.days[this.month - 1];
-    }
-
+    this.month = month;
     this.day = daysCount + 1;
   }
 
@@ -390,7 +421,7 @@ export class NepaliDate {
    * @returns JavaScript Date object representing the minimum supported date
    */
   public static minimum(): Date {
-    return new Date(BUNDLED_CONSTANTS.epoch);
+    return new Date(resolveClass(this).getConstants().epoch);
   }
 
   /**
@@ -398,7 +429,7 @@ export class NepaliDate {
    * @returns JavaScript Date object representing the maximum supported date
    */
   public static maximum(): Date {
-    const { dateMap, epoch } = BUNDLED_CONSTANTS;
+    const { dateMap, epoch } = resolveClass(this).getConstants();
     return new Date(epoch + (dateMap[dateMap.length - 1].daysTillNow - 1) * 86400000);
   }
 
@@ -412,6 +443,9 @@ export class NepaliDate {
     }
     const { dateMap } = this.getConstants();
     const yearIndex = (year ?? this.year) - dateMap[0].year;
+    if (yearIndex < 0 || yearIndex >= dateMap.length) {
+      throw new Error("Year is out of supported range");
+    }
     return dateMap[yearIndex].days[month ?? this.month];
   }
 
@@ -579,11 +613,11 @@ export class NepaliDate {
     if (month < 0 || month > 11) {
       throw new Error("Invalid month index, must be between 0-11");
     }
+    const c = resolveClass(this).getConstants();
     if (nepali) {
-      return short ? BUNDLED_CONSTANTS.monthShortNp[month] : BUNDLED_CONSTANTS.monthNp[month];
-    } else {
-      return short ? BUNDLED_CONSTANTS.monthShortEn[month] : BUNDLED_CONSTANTS.monthEn[month];
+      return short ? c.monthShortNp[month] : c.monthNp[month];
     }
+    return short ? c.monthShortEn[month] : c.monthEn[month];
   }
 
   /**
@@ -597,11 +631,11 @@ export class NepaliDate {
       throw new Error("Invalid day index, must be between 0-6");
     }
 
+    const c = resolveClass(this).getConstants();
     if (nepali) {
-      return short ? BUNDLED_CONSTANTS.weekShortNp[day] : BUNDLED_CONSTANTS.weekNp[day];
-    } else {
-      return short ? BUNDLED_CONSTANTS.weekShortEn[day] : BUNDLED_CONSTANTS.weekEn[day];
+      return short ? c.weekShortNp[day] : c.weekNp[day];
     }
+    return short ? c.weekShortEn[day] : c.weekEn[day];
   }
 
   /**
@@ -612,8 +646,9 @@ export class NepaliDate {
    * @returns true if the date is valid, false otherwise
    */
   public static isValid(year: number, month: number, day: number): boolean {
+    // Resolved outside the try so a broken calendar is reported, not mistaken for "invalid date".
+    const dateMap = resolveClass(this).getConstants().dateMap;
     try {
-      const dateMap = BUNDLED_CONSTANTS.dateMap;
       if (year < dateMap[0].year || year >= dateMap[0].year + dateMap.length) {
         return false;
       }
@@ -640,8 +675,8 @@ export class NepaliDate {
    * @returns true if the date is valid, false otherwise
    */
   public isValid(): boolean {
+    const dateMap = this.getConstants().dateMap;
     try {
-      const dateMap = this.getConstants().dateMap;
       if (this.year < dateMap[0].year || this.year >= dateMap[0].year + dateMap.length) {
         return false;
       }
@@ -681,11 +716,12 @@ export class NepaliDate {
     nextMonth: { year: number; month: number; days: number[] };
     remainingDays: number;
   } {
-    if (!NepaliDate.isValid(year, month, 1)) {
+    const cls = resolveClass(this);
+    if (!cls.isValid(year, month, 1)) {
       throw new Error("Invalid year or month");
     }
 
-    const dateMap = BUNDLED_CONSTANTS.dateMap;
+    const dateMap = cls.getConstants().dateMap;
 
     const prevMonthMap: { year: number; month: number; days: number[] } = {
       year: 0,
@@ -705,7 +741,7 @@ export class NepaliDate {
 
     const yearIndex = year - dateMap[0].year;
 
-    const firstDay = new NepaliDate(year, month, 1);
+    const firstDay = new cls(year, month, 1);
     const firstDayOfWeek = firstDay.getDay();
 
     const daysInMonth = dateMap[yearIndex].days[month];

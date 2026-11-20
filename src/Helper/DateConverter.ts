@@ -1,5 +1,10 @@
 import { NepaliDate } from "../NepaliDate";
 
+/**
+ * Any `NepaliDate` class, including subclasses that plug in their own constants.
+ */
+type NepaliDateClass = new (value?: Date | NepaliDate | number | string) => NepaliDate;
+
 // Custom Error class for Date Conversion
 class DateConversionError extends Error {
   public readonly cause: unknown;
@@ -16,9 +21,10 @@ class DateConversionError extends Error {
 /**
  * Converts a Anno Domini (AD) date to an Bikram Sambat(BS) Date.
  * @param adDate The Anno Domini (AD) date in "YYYY-MM-DD" format.
+ * @param DateClass Optional NepaliDate subclass whose calendar data should be used (defaults to the bundled calendar).
  * @returns The corresponding Bikram Sambat(BS) date in "YYYY-MM-DD" format.
  */
-export const ADtoBS = (adDate: string): string => {
+export const ADtoBS = (adDate: string, DateClass: NepaliDateClass = NepaliDate): string => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(adDate)) {
     throw new Error("Invalid date format. Expected format: YYYY-MM-DD");
   }
@@ -32,7 +38,7 @@ export const ADtoBS = (adDate: string): string => {
   }
 
   try {
-    const nepaliDate = new NepaliDate(ad);
+    const nepaliDate = new DateClass(ad);
     return nepaliDate.format("YYYY-MM-DD");
   } catch (err) {
     throw new DateConversionError("Failed to convert AD to BS", err);
@@ -42,14 +48,15 @@ export const ADtoBS = (adDate: string): string => {
 /**
  * Converts a Bikram Sambat(BS) to an Anno Domini (AD) Date.
  * @param bsDate The Bikram Sambat(BS) date in "YYYY-MM-DD" format.
+ * @param DateClass Optional NepaliDate subclass whose calendar data should be used (defaults to the bundled calendar).
  * @returns The corresponding Anno Domini (AD) date in "YYYY-MM-DD" format.
  */
-export function BStoAD(bsDate: string): string {
+export function BStoAD(bsDate: string, DateClass: NepaliDateClass = NepaliDate): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(bsDate)) {
     throw new Error("Invalid date format. Expected format: YYYY-MM-DD");
   }
   try {
-    const nepaliDateInstance = bsDate ? new NepaliDate(bsDate) : new NepaliDate();
+    const nepaliDateInstance = new DateClass(bsDate);
     const pad = (n: number) => (n < 10 ? `0${String(n)}` : String(n));
     const date = nepaliDateInstance.getEnglishDate();
 

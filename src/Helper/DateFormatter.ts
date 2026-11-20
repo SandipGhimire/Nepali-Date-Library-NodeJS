@@ -1,17 +1,4 @@
 import type { NepaliDate } from "../NepaliDate";
-import type { ProcessedNepaliConstants } from "../types";
-import {
-  BUNDLED_CONSTANTS,
-} from "./Constants";
-
-interface ConstantsHolder {
-  getConstants?: () => ProcessedNepaliConstants;
-}
-
-function getConstantsFromDate(date: NepaliDate): ProcessedNepaliConstants {
-  const holder = date as unknown as ConstantsHolder;
-  return typeof holder.getConstants === "function" ? holder.getConstants() : BUNDLED_CONSTANTS;
-}
 
 /**
  * Pads a number with a leading zero if it's less than 10.
@@ -67,7 +54,7 @@ function yearEn(size: number): DateFormatter {
  */
 function yearNp(size: number): DateFormatter {
   return (date: NepaliDate): string => {
-    const c = getConstantsFromDate(date);
+    const c = date.getConstants();
     const npDigits = c.numberNp;
     if (size <= 2) {
       return npDigit(String(date.getYear()).substring(2), npDigits);
@@ -92,7 +79,7 @@ function monthEn(size: number): DateFormatter {
     if (size === 2) {
       return pad(date.getMonth() + 1);
     }
-    const c = getConstantsFromDate(date);
+    const c = date.getConstants();
     if (size === 3) {
       return c.monthShortEn[date.getMonth()];
     }
@@ -107,7 +94,7 @@ function monthEn(size: number): DateFormatter {
  */
 function monthNp(size: number): DateFormatter {
   return (date: NepaliDate): string => {
-    const c = getConstantsFromDate(date);
+    const c = date.getConstants();
     const npDigits = c.numberNp;
 
     if (size === 1) {
@@ -136,7 +123,7 @@ function dateEn(size: number): DateFormatter {
     if (size === 2) {
       return pad(date.getDate());
     }
-    const c = getConstantsFromDate(date);
+    const c = date.getConstants();
     if (size === 3) {
       return c.weekShortEn[date.getDay()];
     }
@@ -151,7 +138,7 @@ function dateEn(size: number): DateFormatter {
  */
 function dateNp(size: number): DateFormatter {
   return (date: NepaliDate): string => {
-    const c = getConstantsFromDate(date);
+    const c = date.getConstants();
     const npDigits = c.numberNp;
 
     if (size === 1) {
