@@ -25,6 +25,12 @@ All guides, complete API references, Devanagari format tokens, fiscal year helpe
 npm install nepali-date-library
 ```
 
+> **Beta:** the pluggable-calendar-data release is available on the `beta` tag.
+>
+> ```bash
+> npm install nepali-date-library@beta
+> ```
+
 ---
 
 ## 🚀 Quick Example
